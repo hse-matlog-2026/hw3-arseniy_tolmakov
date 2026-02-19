@@ -22,6 +22,46 @@ def to_not_and_or(formula: Formula) -> Formula:
         contains no constants or operators beyond ``'~'``, ``'&'``, and
         ``'|'``.
     """
+    base_var = next(iter(formula.variables()), 'p')
+
+    def rewrite(node: Formula) -> Formula:
+        if is_variable(node.root):
+            return node
+
+        if is_constant(node.root):
+            v = Formula(base_var)
+            nv = Formula('~', v)
+            return Formula('|', v, nv) if node.root == 'T' else Formula('&', v, nv)
+
+        if is_unary(node.root):
+            return Formula('~', rewrite(node.first))
+
+        a = rewrite(node.first)
+        b = rewrite(node.second)
+
+        if node.root == '&' or node.root == '|':
+            return Formula(node.root, a, b)
+
+        if node.root == '->':
+            return Formula('|', Formula('~', a), b)
+
+        if node.root == '+':
+            return Formula('|',
+                           Formula('&', a, Formula('~', b)),
+                           Formula('&', Formula('~', a), b))
+
+        if node.root == '<->':
+            return Formula('|',
+                           Formula('&', a, b),
+                           Formula('&', Formula('~', a), Formula('~', b)))
+
+        if node.root == '-&':
+            return Formula('~', Formula('&', a, b))
+
+        assert node.root == '-|'
+        return Formula('~', Formula('|', a, b))
+
+    return rewrite(formula)
     # Task 3.5
 
 def to_not_and(formula: Formula) -> Formula:
