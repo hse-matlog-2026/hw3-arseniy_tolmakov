@@ -402,8 +402,26 @@ class Formula:
             ...     {'&': Formula.parse('~(~p|~q)')})
             ~(~~(~x|~y)|~~z)
         """
-        for operator in substitution_map:
-            assert is_constant(operator) or is_unary(operator) or \
-                   is_binary(operator)
-            assert substitution_map[operator].variables().issubset({'p', 'q'})
+        for op in substitution_map:
+            assert is_constant(op) or is_unary(op) or is_binary(op)
+            assert substitution_map[op].variables().issubset({'p', 'q'})
+
+        if is_variable(self.root):
+            return self
+
+        if is_constant(self.root):
+            return substitution_map.get(self.root, self)
+
+        if is_unary(self.root):
+            updated_operand = self.first.substitute_operators(substitution_map)
+            if self.root in substitution_map:
+                return substitution_map[self.root].substitute_variables({'p': updated_operand})
+            return Formula(self.root, updated_operand)
+
+        assert is_binary(self.root)
+        left = self.first.substitute_operators(substitution_map)
+        right = self.second.substitute_operators(substitution_map)
+        if self.root in substitution_map:
+            return substitution_map[self.root].substitute_variables({'p': left, 'q': right})
+        return Formula(self.root, left, right)
         # Task 3.4
