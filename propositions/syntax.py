@@ -360,6 +360,22 @@ class Formula:
         """
         for variable in substitution_map:
             assert is_variable(variable)
+
+        if is_variable(self.root):
+            return substitution_map.get(self.root, self)
+
+        if is_constant(self.root):
+            return self
+
+        if is_unary(self.root):
+            return Formula(self.root, self.first.substitute_variables(substitution_map))
+
+        assert is_binary(self.root)
+        return Formula(
+            self.root,
+            self.first.substitute_variables(substitution_map),
+            self.second.substitute_variables(substitution_map)
+    )
         # Task 3.3
 
     def substitute_operators(self, substitution_map: Mapping[str, Formula]) -> \
